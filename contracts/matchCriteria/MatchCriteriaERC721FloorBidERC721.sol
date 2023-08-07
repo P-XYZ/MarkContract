@@ -4,6 +4,7 @@ pragma solidity 0.8.17;
 import {Order, AssetType} from "../types/MarkExchangeDataTypes.sol";
 import {IMatchingCriteria} from "../interfaces/IMatchingCriteria.sol";
 
+error CannotMatch();
 /**
  * @title MatchCriteriaERC721FloorBidERC721
  * @dev Criteria for matching orders where buyer will purchase token from a collection
@@ -21,7 +22,7 @@ contract MatchCriteriaERC721FloorBidERC721 is IMatchingCriteria {
             AssetType
         )
     {
-        revert("Cannot be matched");
+        revert CannotMatch();
     }
 
     function matchMakerBid(Order calldata makerBid, Order calldata takerAsk)

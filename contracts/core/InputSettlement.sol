@@ -22,26 +22,35 @@ import {
   Settlement
 } from "../types/MarkExchangeDataTypes.sol";
 
+error ZeroAddress();
+error CannotUseETH();
+error InsufficientValue();
+error InvalidPaymentToken();
+error FeeMoreThan2Point5();
+error FeeMoreThanPrice();
+error ZeroAmount();
+error ETHTransferFailed();
+
 contract InputSettlement is Ownable, MarkExchangeEvents {
     using SafeERC20 for IERC20;
     
     // constants
     // etherium WETH
-    // address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;  //@@dexter TODO: to change this address
+    // address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;  // TODO: to change this address
     // Mock token address
-    // address public constant WETH = 0xD5ac451B0c50B9476107823Af206eD814a2e2580;  //@@dexter TODO: to change this address
+    // address public constant WETH = 0xD5ac451B0c50B9476107823Af206eD814a2e2580;  // TODO: to change this address
     // sepolia WETH
-    address public constant WETH = 0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9;  //@@dexter TODO: to change this address
+    address private constant WETH = 0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9;  // TODO: to change this address
 
-    uint256 public constant INVERSE_BASIS_POINT = 10_000;
+    uint256 private constant INVERSE_BASIS_POINT = 10_000;
 
     // variables
     //Platform charges
-    uint256 public maxPlatformFeeRate;  //250 maybe i.e., 2.5%
+    uint256 immutable maxPlatformFeeRate;  //250 maybe i.e., 2.5%
     uint256 public platformFeeRate; //feeRate
     address public platformFeeRecipient;
     
-    uint256 public remainingETH = 0;
+    uint256 public remainingETH;
 
     constructor(uint256 _maxPlatformFeeRate) {
         maxPlatformFeeRate = _maxPlatformFeeRate;
@@ -51,7 +60,7 @@ contract InputSettlement is Ownable, MarkExchangeEvents {
         external
         onlyOwner
     {
-        require(_platformFeeRate <= maxPlatformFeeRate, "MarkExchange: Fee cannot be more than 2.5%");
+        if(_platformFeeRate > maxPlatformFeeRate) revert FeeMoreThan2Point5();
         platformFeeRate = _platformFeeRate;
         emit NewFeeRate(platformFeeRate);
     }
@@ -60,6 +69,8 @@ contract InputSettlement is Ownable, MarkExchangeEvents {
         external
         onlyOwner
     {
+        require(_platformFeeRecipient != address(0), "MarkExchange: Address cannot be zero");
+
         platformFeeRecipient = _platformFeeRecipient;
         emit NewFeeRecipient(platformFeeRecipient);
     }
@@ -81,10 +92,11 @@ contract InputSettlement is Ownable, MarkExchangeEvents {
         Fee[] calldata buyerFees,
         uint256 price
     ) internal {
+        uint256 remainingETHMem = remainingETH;
         if (paymentToken == address(0)) {
-            require(msg.sender == buyer, "MarkExchange: Cannot use ETH");
-            require(remainingETH >= price, "MarkExchange: Insufficient value");
-            remainingETH -= price;
+            if(msg.sender != buyer) revert CannotUseETH();
+            if(remainingETHMem < price) revert InsufficientValue();
+            remainingETHMem -= price;
         }
 
         /* Take fee. */
@@ -92,9 +104,9 @@ contract InputSettlement is Ownable, MarkExchangeEvents {
         uint256 buyerFeesPaid = _settleFees(buyerFees, paymentToken, buyer, price, false);
         if (paymentToken == address(0)) {
           /* Need to account for buyer fees paid on top of the price. */
-          remainingETH -= buyerFeesPaid;
+          remainingETHMem -= buyerFeesPaid;
         }
-
+        remainingETH = remainingETHMem;
         /* Transfer remainder to seller. */
         _transferTo(paymentToken, buyer, seller, price - sellerFeesPaid);
     }
@@ -117,20 +129,20 @@ contract InputSettlement is Ownable, MarkExchangeEvents {
         uint256 totalFee = 0;
 
         /* Take protocol fee if enabled. */
-        if (platformFeeRate > 0 && protocolFee) {
+        if (platformFeeRate != 0 && protocolFee) {
             uint256 fee = (price * platformFeeRate) / INVERSE_BASIS_POINT;
             _transferTo(paymentToken, from, platformFeeRecipient, fee);
             totalFee += fee;
         }
 
         /* Take order fees. */
-        for (uint8 i = 0; i < fees.length; i++) {
+        for (uint256 i = 0; i < fees.length; ++i) {
             uint256 fee = (price * fees[i].rate) / INVERSE_BASIS_POINT;
             _transferTo(paymentToken, from, fees[i].recipient, fee);
             totalFee += fee;
         }
 
-        require(totalFee <= price, "MarkExchange: Fees are more than the price");
+        if(totalFee > price) revert FeeMoreThanPrice();
 
         return totalFee;
     }
@@ -148,18 +160,26 @@ contract InputSettlement is Ownable, MarkExchangeEvents {
         address to,
         uint256 amount
     ) internal {
-        require(amount > 0, "MarkExchange: Amount must be greater than zero");
+        if(amount == 0) revert ZeroAmount();
 
         if (paymentToken == address(0)) {
             /* Transfer funds in ETH. */
-            require(to != address(0), "MarkExchange:Transfer to zero address");
+            // if(to == address(0)) revert ZeroAddress();
+            // assembly {
+            //     if iszero(to) {
+            //         let ptr := mload(0x40)
+            //         mstore(ptr, 0xd92e233d00000000000000000000000000000000000000000000000000000000) // selector for `ZeroAddress()`
+            //         revert(ptr, 0x4)
+            //     }
+            // }
+            _addressNotZero(to);
             (bool success,) = payable(to).call{value: amount}("");
-            require(success, "MarkExchange:ETH transfer failed");
+            if(!success) revert ETHTransferFailed();
         } else if (paymentToken == WETH) {
             /* Transfer funds in WETH. */
             IERC20(WETH).safeTransferFrom(from, to, amount);
         } else {
-            revert("MarkExchange: Invalid payment token");
+            revert InvalidPaymentToken();
         }
     }
 
@@ -181,8 +201,20 @@ contract InputSettlement is Ownable, MarkExchangeEvents {
     ) internal {
         if (assetType == AssetType.ERC721) {
             IERC721(collection).safeTransferFrom(from, to, tokenId);
-        } else if (assetType == AssetType.ERC1155) {
+        } else {
             IERC1155(collection).safeTransferFrom(from, to, tokenId, amount, "");
+        }
+    }
+
+    function _addressNotZero(
+        address addressToValidate
+    ) internal pure {
+        assembly {
+            if iszero(addressToValidate) {
+                let ptr := mload(0x40)
+                mstore(ptr, 0xd92e233d00000000000000000000000000000000000000000000000000000000) // selector for `ZeroAddress()`
+                revert(ptr, 0x4)
+            }
         }
     }
 }

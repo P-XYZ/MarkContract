@@ -7,6 +7,13 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./InputValidator.sol";
 
+error ExchangeOpened();
+error ExchangeClosed();
+error FailedAuthorization();
+error InvalidOrderParam();
+error InvalidOrderSide();
+error OnlyInternalCall();
+error OnlyExternalCall();
 
 contract InputExchange is ReentrancyGuard, InputValidator {
 
@@ -15,9 +22,23 @@ contract InputExchange is ReentrancyGuard, InputValidator {
     uint256 private constant EXCHANGE_CLOSE = 0xF00D;
 
     //variable
-    bool public isInternalCall = false;
+    bool public isInternalCall;
     // uint256 public remainingETH = 0;
-    uint256 public exchangeStatus;
+    bool public exchangeStatusOpen;
+
+    modifier exchangeOpen() {
+        if(!exchangeStatusOpen) revert ExchangeClosed();
+        _;
+    }
+
+    modifier accrueETHDust() {
+        if(isInternalCall) revert OnlyExternalCall();
+        remainingETH = msg.value;
+        isInternalCall = true;
+        _;
+        remainingETH = 0;
+        isInternalCall = false;
+    }
 
     constructor(
         IMatchCriteriaRouter _matchCriteriaRouter,
@@ -30,32 +51,6 @@ contract InputExchange is ReentrancyGuard, InputValidator {
         _blockRange,
         _maxPlatformFeeRate
     ) {
-        exchangeStatus = EXCHANGE_CLOSE;
-    }
-    
-    modifier exchangeOpen() {
-        require(exchangeStatus == EXCHANGE_OPEN, "MarkExchange: Exchange Is Closed");
-        _;
-    }
-
-    modifier accrueETHDust() {
-        require(!isInternalCall, "MarkExchange: only allow internal call");
-        remainingETH = msg.value;
-        isInternalCall = true;
-        _;
-        remainingETH = 0;
-        isInternalCall = false;
-    }
-
-    function _openExchange() internal {
-        require(exchangeStatus == EXCHANGE_CLOSE, "MarkExchange: Exchange Already Open");
-        exchangeStatus = EXCHANGE_OPEN;
-        emit Opened();
-    }
-    function _closeExchange() internal {
-        require(exchangeStatus == EXCHANGE_OPEN, "MarkExchange: Exchange Already Closed");
-        exchangeStatus = EXCHANGE_CLOSE;
-        emit Closed();
     }
 
     /**
@@ -68,15 +63,15 @@ contract InputExchange is ReentrancyGuard, InputValidator {
         payable
         nonReentrant
     {
-        require(sell.order.side == Side.Sell && buy.order.side == Side.Buy, "MarkExchange: Invalid order side");
+        if(!isInternalCall) revert OnlyInternalCall();
+        if(sell.order.side != Side.Sell || buy.order.side != Side.Buy) revert InvalidOrderSide();
 
         bytes32 sellHash = _hashOrder(sell.order, nonces[sell.order.trader]);
         bytes32 buyHash = _hashOrder(buy.order, nonces[buy.order.trader]);
 
-        require(_checkOrderValidity(sell.order, sellHash) && _checkOrderValidity(buy.order, buyHash), "MarkExchange: Invalid order parameters");
-
-        require(_validateSignatures(sell, sellHash) && _validateSignatures(buy, buyHash), "MarkExchange: Failed authorization");
-
+        if(!_checkOrderValidity(sell.order, sellHash) || !_checkOrderValidity(buy.order, buyHash)) revert InvalidOrderParam();
+        if(!_validateSignatures(sell, sellHash) || !_validateSignatures(buy, buyHash)) revert FailedAuthorization();
+        
         (uint256 price, uint256 tokenId, uint256 amount, AssetType assetType) = _matchOrders(sell.order, buy.order);
 
         // Mark orders as filled
@@ -132,5 +127,16 @@ contract InputExchange is ReentrancyGuard, InputValidator {
                 }
             }
         }
+    }
+
+    function _openExchange() internal {
+        if(exchangeStatusOpen) revert ExchangeOpened();
+        exchangeStatusOpen = true;
+        emit Opened();
+    }
+    function _closeExchange() internal {
+        if(!exchangeStatusOpen) revert ExchangeClosed();
+        exchangeStatusOpen = false;
+        emit Closed();
     }
 }

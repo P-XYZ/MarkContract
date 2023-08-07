@@ -9,6 +9,10 @@ import "../interfaces/IMatchCriteriaRouter.sol";
 import "../interfaces/IMatchingCriteria.sol";
 import "./InputSettlement.sol";
 
+// error ZeroAddress();
+error OrderCannotMatch();
+error MatchCriteriaNotGranted();
+
 contract InputMatchingEngine is InputSettlement {
 
     IMatchCriteriaRouter public matchCriteriaRouter;
@@ -24,7 +28,15 @@ contract InputMatchingEngine is InputSettlement {
 
     function _setMatchCriteriaRouter(IMatchCriteriaRouter _matchCriteriaRouter) internal
     {
-        require(address(_matchCriteriaRouter) != address(0), "MarkExchange: Address cannot be zero");
+        // if(address(_matchCriteriaRouter) == address(0)) revert ZeroAddress();
+        // assembly {
+        //     if iszero(_matchCriteriaRouter) {
+        //         let ptr := mload(0x40)
+        //         mstore(ptr, 0xd92e233d00000000000000000000000000000000000000000000000000000000) // selector for `ZeroAddress()`
+        //         revert(ptr, 0x4)
+        //     }
+        // }
+        _addressNotZero(address(_matchCriteriaRouter));
         matchCriteriaRouter = _matchCriteriaRouter;
         emit NewMatchCriteriaRouter(matchCriteriaRouter);
     }
@@ -47,9 +59,10 @@ contract InputMatchingEngine is InputSettlement {
             /* Buyer is maker. */
             matchingCriteria = IMatchingCriteria(buy.matchingCriteria);
         }
-        require(matchCriteriaRouter.isCriteriaGranted(address(matchingCriteria)), "MarkExchange: Matching Criteria is not granted");
+
+        if(!matchCriteriaRouter.isCriteriaGranted(address(matchingCriteria))) revert MatchCriteriaNotGranted();
         (bool canMatch, uint256 _price, uint256 _tokenId, uint256 _amount, AssetType _assetType) = sell.listingTime <= buy.listingTime ? matchingCriteria.matchMakerAsk(sell, buy) : matchingCriteria.matchMakerBid(buy, sell);
-        require(canMatch, "MarkExchange: Orders cannot be matched");
+        if (!canMatch) revert OrderCannotMatch();
 
         price = _price;
         tokenId = _tokenId;

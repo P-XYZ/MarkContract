@@ -44,32 +44,37 @@ export function runMatchingPolicyTests(setupTest: any) {
         });
         it('should not match if orders are the same side', async () => {
           sell.side = Side.Buy;
-          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWith(
-            'MarkExchange: Orders cannot be matched',
+          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWithCustomError(
+            exchange,
+            'OrderCannotMatch',
           );
         });
         it("should not match if paymentTokens don't match", async () => {
           sell.paymentToken = ZERO_ADDRESS;
-          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWith(
-            'MarkExchange: Orders cannot be matched',
+          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWithCustomError(
+            exchange,
+            'OrderCannotMatch',
           );
         });
         it("should not match if collections don't match", async () => {
           buy.collection = admin.address;
-          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWith(
-            'MarkExchange: Orders cannot be matched',
+          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWithCustomError(
+            exchange,
+            'OrderCannotMatch',
           );
         });
         it("should not match if tokenIds don't match", async () => {
           buy.tokenId = tokenId + 1;
-          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWith(
-            'MarkExchange: Orders cannot be matched',
+          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWithCustomError(
+            exchange,
+            'OrderCannotMatch',
           );
         });
         it("should not match if prices don't match", async () => {
           sell.price = eth('2');
-          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWith(
-            'MarkExchange: Orders cannot be matched',
+          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWithCustomError(
+            exchange,
+            'OrderCannotMatch',
           );
         });
       });
@@ -90,32 +95,37 @@ export function runMatchingPolicyTests(setupTest: any) {
         });
         it('should not match if orders are the same side', async () => {
           sell.side = Side.Buy;
-          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWith(
-            'MarkExchange: Orders cannot be matched',
+          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWithCustomError(
+            exchange,
+            'OrderCannotMatch',
           );
         });
         it("should not match if paymentTokens don't match", async () => {
           sell.paymentToken = ZERO_ADDRESS;
-          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWith(
-            'MarkExchange: Orders cannot be matched',
+          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWithCustomError(
+            exchange,
+            'OrderCannotMatch',
           );
         });
         it("should not match if collections don't match", async () => {
           buy.collection = admin.address;
-          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWith(
-            'MarkExchange: Orders cannot be matched',
+          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWithCustomError(
+            exchange,
+            'OrderCannotMatch',
           );
         });
         it("should not match if tokenIds don't match", async () => {
           buy.tokenId = tokenId + 1;
-          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWith(
-            'MarkExchange: Orders cannot be matched',
+          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWithCustomError(
+            exchange,
+            'OrderCannotMatch',
           );
         });
         it("should not match if prices don't match", async () => {
           sell.price = eth('2');
-          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWith(
-            'MarkExchange: Orders cannot be matched',
+          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWithCustomError(
+            exchange,
+            'OrderCannotMatch',
           );
         });
       });
@@ -147,32 +157,37 @@ export function runMatchingPolicyTests(setupTest: any) {
         });
         it('should not match if orders are the same side', async () => {
           sell.side = Side.Buy;
-          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWith(
-            'MarkExchange: Orders cannot be matched',
+          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWithCustomError(
+            exchange,
+            'OrderCannotMatch',
           );
         });
         it("should not match if paymentTokens don't match", async () => {
           sell.paymentToken = ZERO_ADDRESS;
-          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWith(
-            'MarkExchange: Orders cannot be matched',
+          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWithCustomError(
+            exchange,
+            'OrderCannotMatch',
           );
         });
         it("should not match if collections don't match", async () => {
           buy.collection = admin.address;
-          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWith(
-            'MarkExchange: Orders cannot be matched',
+          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWithCustomError(
+            exchange,
+            'OrderCannotMatch',
           );
         });
         it("should not match if tokenIds don't match", async () => {
           buy.tokenId = tokenId + 1;
-          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWith(
-            'MarkExchange: Orders cannot be matched',
+          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWithCustomError(
+            exchange,
+            'OrderCannotMatch',
           );
         });
         it("should not match if prices don't match", async () => {
           sell.price = eth('2');
-          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWith(
-            'MarkExchange: Orders cannot be matched',
+          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWithCustomError(
+            exchange,
+            'OrderCannotMatch',
           );
         });
       });
@@ -193,32 +208,37 @@ export function runMatchingPolicyTests(setupTest: any) {
         });
         it('should not match if orders are the same side', async () => {
           sell.side = Side.Buy;
-          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWith(
-            'MarkExchange: Orders cannot be matched',
+          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWithCustomError(
+            exchange,
+            'OrderCannotMatch',
           );
         });
         it("should not match if paymentTokens don't match", async () => {
           sell.paymentToken = ZERO_ADDRESS;
-          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWith(
-            'MarkExchange: Orders cannot be matched',
+          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWithCustomError(
+            exchange,
+            'OrderCannotMatch',
           );
         });
         it("should not match if collections don't match", async () => {
           buy.collection = admin.address;
-          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWith(
-            'MarkExchange: Orders cannot be matched',
+          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWithCustomError(
+            exchange,
+            'OrderCannotMatch',
           );
         });
         it("should not match if tokenIds don't match", async () => {
           buy.tokenId = tokenId + 1;
-          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWith(
-            'MarkExchange: Orders cannot be matched',
+          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWithCustomError(
+            exchange,
+            'OrderCannotMatch',
           );
         });
         it("should not match if prices don't match", async () => {
           sell.price = eth('2');
-          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWith(
-            'MarkExchange: Orders cannot be matched',
+          await expect(exchange.matchOrders(sell, buy)).to.be.revertedWithCustomError(
+            exchange,
+            'OrderCannotMatch',
           );
         });
       });

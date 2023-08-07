@@ -5,6 +5,9 @@ pragma solidity 0.8.17;
 import "./InputExchange.sol";
 import "../interfaces/IMarkExchange.sol";
 
+error OrderCancelledOrFilled();
+error NotOrderTrader();
+
 contract MarkExchangeInput is IMarkExchange, InputExchange {
     
     constructor(
@@ -45,29 +48,10 @@ contract MarkExchangeInput is IMarkExchange, InputExchange {
         accrueETHDust
     {
         uint256 settlementLength = settlements.length;
-        for (uint8 i=0; i < settlementLength; i++) {
-            bytes memory data = abi.encodeWithSelector(this._settleExchangeInputs.selector, settlements[i].sell, settlements[i].buy);
-            (bool success,) = address(this).delegatecall(data);
+        for (uint256 i=0; i < settlementLength; ++i) {
+            _settleExchangeInputs(settlements[i].sell, settlements[i].buy);
         }
         _returnDust();
-    }
-
-    /**
-     * @dev Cancel an buy or sell exchange order
-     * @param order Exchange order to cancel
-     */
-    function cancelExchangeOrder(Order calldata order) public {
-        /* Assert sender is authorized to cancel order. */
-        require(msg.sender == order.trader, "MarkExchange: only trader can cancel");
-
-        bytes32 hash = _hashOrder(order, nonces[order.trader]);
-
-        require(!cancelledOrFilled[hash], "MarkExchange: Order has been cancelled or filled");
-
-        /* Mark order as cancelled, preventing it from being matched. */
-        cancelledOrFilled[hash] = true;
-
-        emit OrderCancelled(hash);
     }
 
     /**
@@ -75,19 +59,19 @@ contract MarkExchangeInput is IMarkExchange, InputExchange {
      * @param orders Exchange orders to cancel
      */
     function cancelExchangeOrders(Order[] calldata orders) external {
-        for (uint8 i = 0; i < orders.length; i++) {
+        for (uint256 i = 0; i < orders.length; ++i) {
             cancelExchangeOrder(orders[i]);
         }
     }
 
     /**
-     * @dev Cancel all current orders for a user, preventing them from being matched. Must be called by the trader of the order
+     * @dev Get user nonce
      */
     function getNonce(address user) external view returns (uint256 nonce) {
         nonce = nonces[user];
     }
     /**
-     * @dev Cancel all current orders for a user, preventing them from being matched. Must be called by the trader of the order
+     * @dev increase user nonce
      */
     function incrementNonce() external {
         nonces[msg.sender] += 1;
@@ -121,5 +105,24 @@ contract MarkExchangeInput is IMarkExchange, InputExchange {
     
     function closeExchange() external onlyOwner {
         _closeExchange();
+    }
+
+    /**
+     * @dev Cancel an buy or sell exchange order
+     * @param order Exchange order to cancel
+     */
+    function cancelExchangeOrder(Order calldata order) public {
+        /* Assert sender is authorized to cancel order. */
+        // require(msg.sender == order.trader, "MarkExchange: only trader can cancel");
+        if(msg.sender != order.trader) revert NotOrderTrader();
+
+        bytes32 hash = _hashOrder(order, nonces[order.trader]);
+
+        if(cancelledOrFilled[hash]) revert OrderCancelledOrFilled();
+
+        /* Mark order as cancelled, preventing it from being matched. */
+        cancelledOrFilled[hash] = true;
+
+        emit OrderCancelled(hash);
     }
 }

@@ -137,7 +137,7 @@ export function runExecuteTests(setupTest: any) {
 
       await expect(
         exchange.connect(bob).settleExchangeInputs(sellInput, buyInput),
-      ).to.be.revertedWith('MarkExchange: Invalid payment token');
+      ).to.be.revertedWithCustomError(exchange, `InvalidPaymentToken`);
     });
 
     it('should revert if user revokes approval from Exchange', async () => {
@@ -263,23 +263,26 @@ export function runExecuteTests(setupTest: any) {
     });
     it('can cancel order', async () => {
       await exchange.connect(bob).cancelExchangeOrder(buy.parameters);
-      await expect(exchange.settleExchangeInputs(sellInput, buyInput)).to.be.revertedWith(
-        'MarkExchange: Invalid order parameters',
+      await expect(exchange.settleExchangeInputs(sellInput, buyInput)).to.be.revertedWithCustomError(
+        exchange,
+        'InvalidOrderParam',
       );
     });
     it('can cancel bulk listing', async () => {
       sellInput = await sell.packBulk(otherOrders);
       await exchange.connect(alice).cancelExchangeOrder(sell.parameters);
-      await expect(exchange.settleExchangeInputs(sellInput, buyInput)).to.be.revertedWith(
-        'MarkExchange: Invalid order parameters',
+      await expect(exchange.settleExchangeInputs(sellInput, buyInput)).to.be.revertedWithCustomError(
+        exchange,
+        'InvalidOrderParam',
       );
     });
     it('can cancel multiple orders', async () => {
       await exchange
         .connect(bob)
         .cancelExchangeOrders([buy.parameters]);
-      await expect(exchange.settleExchangeInputs(sellInput, buyInput)).to.be.revertedWith(
-        'MarkExchange: Invalid order parameters',
+      await expect(exchange.settleExchangeInputs(sellInput, buyInput)).to.be.revertedWithCustomError(
+        exchange,
+        'InvalidOrderParam',
       );
     });
     it('should not cancel if not user', async () => {
@@ -288,26 +291,30 @@ export function runExecuteTests(setupTest: any) {
     });
     it('should not match with invalid parameters sell', async () => {
       await exchange.connect(bob).cancelExchangeOrder(buy.parameters);
-      await expect(exchange.settleExchangeInputs(sellInput, buyInput)).to.be.revertedWith(
-        'MarkExchange: Invalid order parameters',
+      await expect(exchange.settleExchangeInputs(sellInput, buyInput)).to.be.revertedWithCustomError(
+        exchange,
+        'InvalidOrderParam',
       );
     });
     it('should not match with invalid parameters buy', async () => {
       await exchange.connect(bob).cancelExchangeOrder(buy.parameters);
-      await expect(exchange.settleExchangeInputs(sellInput, buyInput)).to.be.revertedWith(
-        'MarkExchange: Invalid order parameters',
+      await expect(exchange.settleExchangeInputs(sellInput, buyInput)).to.be.revertedWithCustomError(
+        exchange,
+        'InvalidOrderParam',
       );
     });
     it('should not match with invalid signatures sell', async () => {
       sellInput = await sell.pack({ signer: bob });
-      await expect(exchange.settleExchangeInputs(sellInput, buyInput)).to.be.revertedWith(
-        'MarkExchange: Failed authorization',
+      await expect(exchange.settleExchangeInputs(sellInput, buyInput)).to.be.revertedWithCustomError(
+        exchange,
+        'FailedAuthorization',
       );
     });
     it('should not match with invalid signatures buy', async () => {
       buyInput = await buy.pack({ signer: alice });
-      await expect(exchange.settleExchangeInputs(sellInput, buyInput)).to.be.revertedWith(
-        'MarkExchange: Failed authorization',
+      await expect(exchange.settleExchangeInputs(sellInput, buyInput)).to.be.revertedWithCustomError(
+        exchange,
+        'FailedAuthorization',
       );
     });
     it('should revert if orders cannot be matched', async () => {
@@ -316,7 +323,7 @@ export function runExecuteTests(setupTest: any) {
 
       await expect(
         exchange.connect(bob).settleExchangeInputs(sellInput, buyInput),
-      ).to.be.revertedWith('MarkExchange: Orders cannot be matched');
+      ).to.be.revertedWithCustomError(exchange, 'OrderCannotMatch');
     });
     it('should revert policy is not whitelisted', async () => {
       sell.parameters.matchingCriteria = ZERO_ADDRESS;
@@ -326,7 +333,7 @@ export function runExecuteTests(setupTest: any) {
 
       await expect(
         exchange.connect(bob).settleExchangeInputs(sellInput, buyInput),
-      ).to.be.revertedWith('MarkExchange: Matching Criteria is not granted');
+      ).to.be.revertedWithCustomError(exchange, 'MatchCriteriaNotGranted');
     });
     it('should revert if buyer has insufficient funds ETH', async () => {
       sell.parameters.paymentToken = ZERO_ADDRESS;
@@ -375,20 +382,23 @@ export function runExecuteTests(setupTest: any) {
     });
     it('should not match with wrong order nonce sell', async () => {
       await exchange.connect(alice).incrementNonce();
-      await expect(exchange.settleExchangeInputs(sellInput, buyInput)).to.be.revertedWith(
-        'MarkExchange: Failed authorization',
+      await expect(exchange.settleExchangeInputs(sellInput, buyInput)).to.be.revertedWithCustomError(
+        exchange,
+        'FailedAuthorization',
       );
     });
     it('should not match with wrong order nonce buy', async () => {
       await exchange.connect(bob).incrementNonce();
-      await expect(exchange.settleExchangeInputs(sellInput, buyInput)).to.be.revertedWith(
-        'MarkExchange: Failed authorization',
+      await expect(exchange.settleExchangeInputs(sellInput, buyInput)).to.be.revertedWithCustomError(
+        exchange,
+        'FailedAuthorization',
       );
     });
     it('should not match filled order sell', async () => {
       await waitForTx(exchange.settleExchangeInputs(sellInput, buyInput));
-      await expect(exchange.settleExchangeInputs(sellInput, buyInput)).to.be.revertedWith(
-        'MarkExchange: Invalid order parameters',
+      await expect(exchange.settleExchangeInputs(sellInput, buyInput)).to.be.revertedWithCustomError(
+        exchange,
+        'InvalidOrderParam',
       );
     });
     it('should not match filled order buy', async () => {
@@ -399,14 +409,16 @@ export function runExecuteTests(setupTest: any) {
         salt: 1,
       });
       sellInput = await sell.pack();
-      await expect(exchange.settleExchangeInputs(sellInput, buyInput)).to.be.revertedWith(
-        'MarkExchange: Invalid order parameters',
+      await expect(exchange.settleExchangeInputs(sellInput, buyInput)).to.be.revertedWithCustomError(
+        exchange,
+        'InvalidOrderParam',
       );
     });
     it('should revert if closed', async () => {
       await exchange.closeExchange();
-      await expect(exchange.settleExchangeInputs(sellInput, buyInput)).to.be.revertedWith(
-        'MarkExchange: Exchange Is Closed',
+      await expect(exchange.settleExchangeInputs(sellInput, buyInput)).to.be.revertedWithCustomError(
+        exchange,
+        'ExchangeClosed',
       );
     });
     it('should succeed if reopened', async () => {

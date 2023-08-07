@@ -33,9 +33,9 @@ export function runPermissionsTests(
         ).to.be.revertedWith('Ownable: caller is not the owner');
       });
       it('reverts when address is 0', async () => {
-        await expect(exchange[fnName](ZERO_ADDRESS)).to.be.revertedWith(
-          'MarkExchange: Address cannot be zero',
-        );
+        // solidity has no direct `if(addressToValidate == address(0)) revert ZeroAddress();`
+        // "The given contract doesn't have a custom error named 'ZeroAddress'"
+        await expect(exchange[fnName](ZERO_ADDRESS)).to.be.reverted;
       });
     };
 

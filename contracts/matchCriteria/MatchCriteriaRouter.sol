@@ -21,6 +21,8 @@ contract MatchCriteriaRouter is IMatchCriteriaRouter, Ownable, MarkExchangeEvent
      * @param Criteria address of Criteria to grant
      */
     function grantCriteria(address Criteria) external override onlyOwner {
+        require(Criteria != address(0), "MatchCriteriaRouter: Address cannot be zero");
+
         if (!_grantedCriteria.contains(Criteria)) {
             _grantedCriteria.add(Criteria);
             emit CriteriaGranted(Criteria);
@@ -70,7 +72,7 @@ contract MatchCriteriaRouter is IMatchCriteriaRouter, Ownable, MarkExchangeEvent
 
         address[] memory grantedCriteria = new address[](resultSize);
 
-        for (uint256 i = 0; i < resultSize; i++) {
+        for (uint256 i = 0; i < resultSize; ++i) {
             grantedCriteria[i] = _grantedCriteria.at(cursor + i);
         }
 

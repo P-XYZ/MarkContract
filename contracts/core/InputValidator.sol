@@ -8,12 +8,18 @@ import "../utility/BulkSignVerifier.sol";
 import "../types/EIP712DomainAndTypehash.sol";
 import "./InputMatchingEngine.sol";
 import "../types/MarkExchangeEvents.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+
+error BlockOutOfRange();
+// error ZeroAddress();
 
 contract InputValidator is EIP712DomainAndTypehash, InputMatchingEngine {
 
+    using ECDSA for bytes32;
+
     //constants
-    string public constant NAME = "Mark Exchange";
-    string public constant VERSION = "1.0";
+    string private constant NAME = "Mark Exchange";
+    string private constant VERSION = "1.0";
     bytes1 private constant CHECK_ORACLE_SIGN = 0x01;
 
     //variables
@@ -34,7 +40,7 @@ contract InputValidator is EIP712DomainAndTypehash, InputMatchingEngine {
         _matchCriteriaRouter,
         _maxPlatformFeeRate
     ) {
-
+        require(_oracle != address(0), "MarkExchange: Address cannot be zero");
         // Derive name and version hashes alongside required EIP-712 typehashes.
         DOMAIN_SEPARATOR = _hashDomain(EIP712Domain({
             name              : NAME,
@@ -51,7 +57,15 @@ contract InputValidator is EIP712DomainAndTypehash, InputMatchingEngine {
     function _setOracle(address _oracle)
         internal
     {
-        require(_oracle != address(0), "MarkExchange: Address cannot be zero");
+        // if(_oracle == address(0)) revert ZeroAddress();
+        // assembly {
+        //     if iszero(_oracle) {
+        //         let ptr := mload(0x40)
+        //         mstore(ptr, 0xd92e233d00000000000000000000000000000000000000000000000000000000) // selector for `ZeroAddress()`
+        //         revert(ptr, 0x4)
+        //     }
+        // }
+        _addressNotZero(_oracle);
         oracle = _oracle;
         emit NewOracle(oracle);
     }
@@ -88,12 +102,12 @@ contract InputValidator is EIP712DomainAndTypehash, InputMatchingEngine {
         view
         returns (bool)
     {
-        if (order.order.trader == msg.sender) { //@@dexter logic changed a bit
+        if (order.order.trader == msg.sender) {
           return true;
         } else {
             if (order.order.extraParams.length > 0 && order.order.extraParams[0] == CHECK_ORACLE_SIGN) {
                 // Check oracle authorization
-                require(block.number - order.blockNumber < blockRange, "MarkExchange: Signed block number out of range");
+                if(block.number - order.blockNumber >= blockRange) revert BlockOutOfRange();
                 if (
                     !_validateOracleAuthorization(
                         orderHash,
@@ -218,8 +232,16 @@ contract InputValidator is EIP712DomainAndTypehash, InputMatchingEngine {
         bytes32 r,
         bytes32 s
     ) internal pure returns (bool) {
-        require(signer != address(0), "MarkExchange: signer invalid");
-        return (v == 27 || v == 28) && signer == ecrecover(digest, v, r, s);
+        // if(signer == address(0)) revert ZeroAddress();
+        // assembly {
+        //     if iszero(signer) {
+        //         let ptr := mload(0x40)
+        //         mstore(ptr, 0xd92e233d00000000000000000000000000000000000000000000000000000000) // selector for `ZeroAddress()`
+        //         revert(ptr, 0x4)
+        //     }
+        // }
+        _addressNotZero(signer);
+        return (v == 27 || v == 28) && signer == ECDSA.recover(digest, v, r, s);
     }
 
 } 

@@ -9,10 +9,10 @@ import { BigNumber, Wallet } from 'ethers';
 import { eth, Order, Side } from '../test/exchange';
 
 const deployedAddress = {
-  "MatchCriteriaRouter": "0xD7E9Dc76bc74DA2c6962D844b5Dc0198F5E71ccC",
-  "MatchCriteriaERC721": "0xc1889A04b091dAB67c6C24DC9f7d153D66A2B14A",
-  "MatchCriteriaERC1155": "0x503FeA1a7874Ac6b3987A6428dd25aC721653298",
-  "MarkExchangeRouter": "0xd31094Df353441BFB091cEdEd8De8BBaFC8350cF",
+  "MatchCriteriaRouter": "0x3B16a89Fdf88E78Ee4d687f317e6c71346e9291e",
+  "MatchCriteriaERC721": "0x3ABfcB07F79d6D9780c292A3d8DEEDa9C11Dfe8e",
+  "MatchCriteriaERC1155": "0xf2D4b05d9A69614f899B1A0a5f83434C02B169cF",
+  "MarkExchangeRouter": "0xC29f4F3CBAA676878A126b6091c5FCeb928C9CA8",
   "MockERC721": "0xf53c2D9311117892BfF503635d1AE47d9eF8862A",
 };
 let exchangeRouter;
@@ -23,7 +23,7 @@ const INVERSE_BASIS_POINT = 10000;
 const price: BigNumber = eth('0.0000001');
 const feeRate = 300;
 const wethAddress = "0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9";
-let tokenId = 3;
+let tokenId = 6;
 
 // npx hardhat run --network sepolia scripts/test_sepolia.ts
 async function main() {
@@ -33,11 +33,11 @@ async function main() {
 
   const MarkExchangeRouter = await ethers.getContractFactory('MarkExchangeRouter')
   exchangeRouter = MarkExchangeRouter.attach(deployedAddress.MarkExchangeRouter);
-  console.log(`exchangeStatus: ${await exchangeRouter.exchangeStatus()}`);
+  console.log(`exchangeStatusOpen: ${await exchangeRouter.exchangeStatusOpen()}`);
   if (false)
   {
     await exchangeRouter.openExchange();
-    console.log(`exchangeStatus: ${await exchangeRouter.exchangeStatus()}`);
+    console.log(`exchangeStatusOpen: ${await exchangeRouter.exchangeStatusOpen()}`);
   }
 
   const MatchCriteriaRouter = await ethers.getContractFactory('MatchCriteriaRouter')
@@ -73,14 +73,15 @@ async function main() {
     // https://sepolia.etherscan.io/tx/0x7509d4f91a93e59c230507e9d6ae1c1a0c97258b2e6c6844a4aedd23300ca476
     await exchangeRouter.settleExchangeInputs(sellInput, buyInput);
   }
+
   if (true) {
-    tokenId = 4;
+    tokenId = 6;
     const sellOrder = generateOrder(deployer, { side: Side.Sell });
     const buyOrder = generateOrder(deployer, { side: Side.Buy });
     const sellInput = await sellOrder.pack();
     const buyInput = await buyOrder.pack();
 
-    tokenId = 5;
+    tokenId = 7;
     const sellOrder2 = generateOrder(deployer, { side: Side.Sell });
     const buyOrder2 = generateOrder(deployer, { side: Side.Buy });
     const sellInput2 = await sellOrder2.pack();

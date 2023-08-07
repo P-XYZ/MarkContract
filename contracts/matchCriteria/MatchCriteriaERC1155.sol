@@ -30,7 +30,7 @@ contract MatchCriteriaERC1155 is IMatchingCriteria {
             (makerAsk.price == takerBid.price),
             makerAsk.price,
             makerAsk.tokenId,
-            1,
+            makerAsk.amount,
             AssetType.ERC1155
         );
     }
@@ -56,7 +56,7 @@ contract MatchCriteriaERC1155 is IMatchingCriteria {
             (makerBid.price == takerAsk.price),
             makerBid.price,
             makerBid.tokenId,
-            1,
+            makerBid.amount,
             AssetType.ERC1155
         );
     }

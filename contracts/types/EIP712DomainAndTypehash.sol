@@ -17,20 +17,20 @@ contract EIP712DomainAndTypehash {
     }
 
     /* Order typehash for EIP 712 compatibility. */
-    bytes32 constant public FEE_TYPEHASH = keccak256(
+    bytes32 constant private FEE_TYPEHASH = keccak256(
         "Fee(uint16 rate,address recipient)"
     );
-    bytes32 constant public ORDER_TYPEHASH = keccak256(
+    bytes32 constant private ORDER_TYPEHASH = keccak256(
         "Order(address trader,uint8 side,address matchingCriteria,address collection,uint256 tokenId,uint256 amount,address paymentToken,uint256 price,uint256 listingTime,uint256 expirationTime,Fee[] fees,uint256 salt,bytes extraParams,uint256 nonce)Fee(uint16 rate,address recipient)"
     );
-    bytes32 constant public ORACLE_ORDER_TYPEHASH = keccak256(
+    bytes32 constant private ORACLE_ORDER_TYPEHASH = keccak256(
         "OracleOrder(Order order,uint256 blockNumber)Fee(uint16 rate,address recipient)Order(address trader,uint8 side,address matchingCriteria,address collection,uint256 tokenId,uint256 amount,address paymentToken,uint256 price,uint256 listingTime,uint256 expirationTime,Fee[] fees,uint256 salt,bytes extraParams,uint256 nonce)"
     );
-    bytes32 constant public ROOT_TYPEHASH = keccak256(
+    bytes32 constant private ROOT_TYPEHASH = keccak256(
         "Root(bytes32 root)"
     );
 
-    bytes32 constant EIP712DOMAIN_TYPEHASH = keccak256(
+    bytes32 constant private EIP712DOMAIN_TYPEHASH = keccak256(
         "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
     );
 
@@ -74,7 +74,7 @@ contract EIP712DomainAndTypehash {
         bytes32[] memory feeHashes = new bytes32[](
             fees.length
         );
-        for (uint256 i = 0; i < fees.length; i++) {
+        for (uint256 i = 0; i < fees.length; ++i) {
             feeHashes[i] = _hashFee(fees[i]);
         }
         return keccak256(abi.encodePacked(feeHashes));
