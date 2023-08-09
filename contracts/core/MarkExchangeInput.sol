@@ -48,8 +48,10 @@ contract MarkExchangeInput is IMarkExchange, InputExchange {
         accrueETHDust
     {
         uint256 settlementLength = settlements.length;
+
         for (uint256 i=0; i < settlementLength; ++i) {
-            _settleExchangeInputs(settlements[i].sell, settlements[i].buy);
+            bytes memory data = abi.encodeWithSelector(this._settleExchangeInputs.selector, settlements[i].sell, settlements[i].buy);
+            (bool success,) = address(this).delegatecall(data);
         }
         _returnDust();
     }

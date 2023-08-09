@@ -40,7 +40,9 @@ contract InputSettlement is Ownable, MarkExchangeEvents {
     // Mock token address
     // address public constant WETH = 0xD5ac451B0c50B9476107823Af206eD814a2e2580;  // TODO: to change this address
     // sepolia WETH
-    address private constant WETH = 0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9;  // TODO: to change this address
+    // address private constant WETH = 0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9;  // TODO: to change this address
+    // mumbai WETH
+    address private constant WETH = 0xA6FA4fB5f76172d178d61B04b0ecd319C5d1C0aa;  // TODO: to change this address
 
     uint256 private constant INVERSE_BASIS_POINT = 10_000;
 
@@ -69,7 +71,7 @@ contract InputSettlement is Ownable, MarkExchangeEvents {
         external
         onlyOwner
     {
-        require(_platformFeeRecipient != address(0), "MarkExchange: Address cannot be zero");
+        _addressNotZero(_platformFeeRecipient);
 
         platformFeeRecipient = _platformFeeRecipient;
         emit NewFeeRecipient(platformFeeRecipient);
@@ -164,14 +166,6 @@ contract InputSettlement is Ownable, MarkExchangeEvents {
 
         if (paymentToken == address(0)) {
             /* Transfer funds in ETH. */
-            // if(to == address(0)) revert ZeroAddress();
-            // assembly {
-            //     if iszero(to) {
-            //         let ptr := mload(0x40)
-            //         mstore(ptr, 0xd92e233d00000000000000000000000000000000000000000000000000000000) // selector for `ZeroAddress()`
-            //         revert(ptr, 0x4)
-            //     }
-            // }
             _addressNotZero(to);
             (bool success,) = payable(to).call{value: amount}("");
             if(!success) revert ETHTransferFailed();

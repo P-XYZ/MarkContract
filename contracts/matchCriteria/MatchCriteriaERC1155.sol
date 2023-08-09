@@ -26,6 +26,7 @@ contract MatchCriteriaERC1155 is IMatchingCriteria {
             (makerAsk.paymentToken == takerBid.paymentToken) &&
             (makerAsk.collection == takerBid.collection) &&
             (makerAsk.tokenId == takerBid.tokenId) &&
+            (makerAsk.amount == takerBid.amount) &&
             (makerAsk.matchingCriteria == takerBid.matchingCriteria) &&
             (makerAsk.price == takerBid.price),
             makerAsk.price,
@@ -52,6 +53,7 @@ contract MatchCriteriaERC1155 is IMatchingCriteria {
             (makerBid.paymentToken == takerAsk.paymentToken) &&
             (makerBid.collection == takerAsk.collection) &&
             (makerBid.tokenId == takerAsk.tokenId) &&
+            (makerBid.amount == takerAsk.amount) &&
             (makerBid.matchingCriteria == takerAsk.matchingCriteria) &&
             (makerBid.price == takerAsk.price),
             makerBid.price,

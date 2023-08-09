@@ -127,6 +127,127 @@ export function runExecuteTests(setupTest: any) {
       );
     });
 
+    it('can trade multiple ERC1155', async () => {
+      await mockERC1155.mint(alice.address, tokenId, 10);
+      expect(await mockERC1155.balanceOf(alice.address, tokenId)).to.be.equal(10);
+      expect(await mockERC1155.balanceOf(bob.address, tokenId)).to.be.equal(0);
+      sell = generateOrder(alice, {
+        side: Side.Sell,
+        tokenId,
+        amount: 10,
+        collection: mockERC1155.address,
+        matchingCriteria: matchCriterias.matchCriteriaERC1155.address,
+      });
+      sellInput = await sell.pack();
+
+      buy = generateOrder(bob, {
+        side: Side.Buy,
+        tokenId,
+        amount: 9,
+        collection: mockERC1155.address,
+        matchingCriteria: matchCriterias.matchCriteriaERC1155.address,
+      });
+      buyInput = await buy.pack();
+      await expect(
+        exchange.settleExchangeInputs(sellInput, buyInput),
+      ).to.be.revertedWithCustomError(exchange, `OrderCannotMatch`);
+
+      buy = generateOrder(bob, {
+        side: Side.Sell,
+        tokenId,
+        amount: 10,
+        collection: mockERC1155.address,
+        matchingCriteria: matchCriterias.matchCriteriaERC1155.address,
+      });
+      buyInput = await buy.pack();
+      await expect(
+        exchange.settleExchangeInputs(sellInput, buyInput),
+      ).to.be.revertedWithCustomError(exchange, `InvalidOrderSide`);
+
+      const invalidTokenId = tokenId + 1;
+      buy = generateOrder(bob, {
+        side: Side.Buy,
+        invalidTokenId,
+        amount: 10,
+        collection: mockERC1155.address,
+        matchingCriteria: matchCriterias.matchCriteriaERC1155.address,
+      });
+      buyInput = await buy.pack();
+      await expect(
+        exchange.settleExchangeInputs(sellInput, buyInput),
+      ).to.be.revertedWithCustomError(exchange, `OrderCannotMatch`);
+
+      buy = generateOrder(bob, {
+        side: Side.Buy,
+        tokenId,
+        amount: 10,
+        collection: mockERC1155.address,
+        matchingCriteria: bob.address,
+      });
+      buyInput = await buy.pack();
+      await expect(
+        exchange.settleExchangeInputs(sellInput, buyInput),
+      ).to.be.revertedWithCustomError(exchange, `OrderCannotMatch`);
+
+      buy = generateOrder(bob, {
+        side: Side.Buy,
+        tokenId,
+        amount: 10,
+        collection: mockERC1155.address,
+        matchingCriteria: matchCriterias.matchCriteriaERC721.address,
+      });
+      buyInput = await buy.pack();
+      await expect(
+        exchange.settleExchangeInputs(sellInput, buyInput),
+      ).to.be.revertedWithCustomError(exchange, `OrderCannotMatch`);
+
+      buy = generateOrder(bob, {
+        side: Side.Buy,
+        tokenId,
+        amount: 10,
+        collection: mockERC1155.address,
+        matchingCriteria: matchCriterias.matchCriteriaERC1155.address,
+      });
+      buyInput = await buy.pack();
+
+      await waitForTx(exchange.settleExchangeInputs(sellInput, buyInput));
+      expect(await mockERC1155.balanceOf(bob.address, tokenId)).to.be.equal(10);
+      expect(await mockERC1155.balanceOf(alice.address, tokenId)).to.be.equal(0);
+      await checkBalances(
+        aliceBalance,
+        aliceBalanceWeth.add(priceMinusFee),
+        bobBalance,
+        bobBalanceWeth.sub(price).sub(fee),
+        feeRecipientBalance,
+        feeRecipientBalanceWeth.add(fee).add(fee),
+      );
+    });
+
+    it('can not trade with invalid signature', async () => {
+      await mockERC1155.mint(alice.address, tokenId, 1);
+      sell = generateOrder(alice, {
+        side: Side.Sell,
+        tokenId,
+        amount: 1,
+        collection: mockERC1155.address,
+        matchingCriteria: matchCriterias.matchCriteriaERC1155.address,
+      });
+      buy = generateOrder(bob, {
+        side: Side.Buy,
+        tokenId,
+        amount: 1,
+        collection: mockERC1155.address,
+        matchingCriteria: matchCriterias.matchCriteriaERC1155.address,
+      });
+      sellInput = await sell.pack();
+      buyInput = await buy.pack();
+      buyInput.signatureVersion = 2;
+
+      await expect(
+        exchange.settleExchangeInputs(sellInput, buyInput),
+      ).to.be.reverted;
+    });
+
     it('should revert with ERC20 not WETH', async () => {
       sell.parameters.paymentToken = mockERC721.address;
       buy.parameters.paymentToken = mockERC721.address;

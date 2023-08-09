@@ -17,10 +17,6 @@ error OnlyExternalCall();
 
 contract InputExchange is ReentrancyGuard, InputValidator {
 
-    //constant
-    uint256 private constant EXCHANGE_OPEN = 0xCAFE;
-    uint256 private constant EXCHANGE_CLOSE = 0xF00D;
-
     //variable
     bool public isInternalCall;
     // uint256 public remainingETH = 0;

@@ -28,14 +28,6 @@ contract InputMatchingEngine is InputSettlement {
 
     function _setMatchCriteriaRouter(IMatchCriteriaRouter _matchCriteriaRouter) internal
     {
-        // if(address(_matchCriteriaRouter) == address(0)) revert ZeroAddress();
-        // assembly {
-        //     if iszero(_matchCriteriaRouter) {
-        //         let ptr := mload(0x40)
-        //         mstore(ptr, 0xd92e233d00000000000000000000000000000000000000000000000000000000) // selector for `ZeroAddress()`
-        //         revert(ptr, 0x4)
-        //     }
-        // }
         _addressNotZero(address(_matchCriteriaRouter));
         matchCriteriaRouter = _matchCriteriaRouter;
         emit NewMatchCriteriaRouter(matchCriteriaRouter);

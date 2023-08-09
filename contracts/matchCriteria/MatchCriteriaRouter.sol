@@ -7,6 +7,8 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 import {IMatchCriteriaRouter} from "../interfaces/IMatchCriteriaRouter.sol";
 import "../types/MarkExchangeEvents.sol";
 
+error ZeroAddress();
+
 /**
  * @title MatchCriteriaRouter
  * @dev Manages the Criteria for the futureverse nft exchange
@@ -21,7 +23,7 @@ contract MatchCriteriaRouter is IMatchCriteriaRouter, Ownable, MarkExchangeEvent
      * @param Criteria address of Criteria to grant
      */
     function grantCriteria(address Criteria) external override onlyOwner {
-        require(Criteria != address(0), "MatchCriteriaRouter: Address cannot be zero");
+        if (Criteria == address(0)) revert ZeroAddress();
 
         if (!_grantedCriteria.contains(Criteria)) {
             _grantedCriteria.add(Criteria);

@@ -12,9 +12,14 @@ export function runPermissionsTests(
     let alice: Wallet;
 
     let exchange: Contract;
+    let criteriaRouter: any;
 
     before(async () => {
-      ({ admin, alice, exchange } = await setupTest());
+      ({ admin, alice, exchange} = await setupTest());
+      const MatchCriteriaRouter = await ethers.getContractFactory('MatchCriteriaRouter');
+      const criteriaRouterAddr = await exchange.matchCriteriaRouter();
+      // console.log(`criteriaRouterAddr: ${criteriaRouterAddr}`);
+      criteriaRouter = MatchCriteriaRouter.attach(criteriaRouterAddr);
     });
 
     /*
@@ -46,6 +51,8 @@ export function runPermissionsTests(
     */
     describe('setMatchCriteriaRouter', async () => setAddress('setMatchCriteriaRouter'));
 
+    describe('setPlatformFeeRecipient', async () => setAddress('setPlatformFeeRecipient'));
+
     describe('setBlockRange', async () => {
       it('can be called by owner', async () => {
         await exchange.setBlockRange(5);
@@ -73,6 +80,20 @@ export function runPermissionsTests(
       });
       it('reverts when not called by owner', async () => {
         await expect(exchange.connect(alice).openExchange()).to.be.revertedWith(
+          'Ownable: caller is not the owner',
+        );
+      });
+    });
+
+    describe('grantCriteria', async () => {
+      it('can be called by owner', async () => {
+        await criteriaRouter.grantCriteria(alice.address);
+      });
+      it('reverts when ZERO_ADDRESS', async () => {
+        await expect(criteriaRouter.grantCriteria(ZERO_ADDRESS)).to.be.reverted;
+      });
+      it('reverts when not called by owner', async () => {
+        await expect(criteriaRouter.connect(alice).grantCriteria(alice.address)).to.be.revertedWith(
           'Ownable: caller is not the owner',
         );
       });

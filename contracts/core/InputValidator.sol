@@ -40,7 +40,7 @@ contract InputValidator is EIP712DomainAndTypehash, InputMatchingEngine {
         _matchCriteriaRouter,
         _maxPlatformFeeRate
     ) {
-        require(_oracle != address(0), "MarkExchange: Address cannot be zero");
+        _addressNotZero(_oracle);
         // Derive name and version hashes alongside required EIP-712 typehashes.
         DOMAIN_SEPARATOR = _hashDomain(EIP712Domain({
             name              : NAME,
@@ -57,14 +57,6 @@ contract InputValidator is EIP712DomainAndTypehash, InputMatchingEngine {
     function _setOracle(address _oracle)
         internal
     {
-        // if(_oracle == address(0)) revert ZeroAddress();
-        // assembly {
-        //     if iszero(_oracle) {
-        //         let ptr := mload(0x40)
-        //         mstore(ptr, 0xd92e233d00000000000000000000000000000000000000000000000000000000) // selector for `ZeroAddress()`
-        //         revert(ptr, 0x4)
-        //     }
-        // }
         _addressNotZero(_oracle);
         oracle = _oracle;
         emit NewOracle(oracle);

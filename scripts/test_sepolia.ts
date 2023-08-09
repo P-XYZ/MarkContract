@@ -9,10 +9,10 @@ import { BigNumber, Wallet } from 'ethers';
 import { eth, Order, Side } from '../test/exchange';
 
 const deployedAddress = {
-  "MatchCriteriaRouter": "0x3B16a89Fdf88E78Ee4d687f317e6c71346e9291e",
-  "MatchCriteriaERC721": "0x3ABfcB07F79d6D9780c292A3d8DEEDa9C11Dfe8e",
-  "MatchCriteriaERC1155": "0xf2D4b05d9A69614f899B1A0a5f83434C02B169cF",
-  "MarkExchangeRouter": "0xC29f4F3CBAA676878A126b6091c5FCeb928C9CA8",
+  "MatchCriteriaRouter": "0xcD8B2944CD50e32e04376EbA27fD4835D7734B98",
+  "MatchCriteriaERC721": "0x5dF160605E04087dCF41e4286e889321CC6Bd83F",
+  "MatchCriteriaERC1155": "0x057832E0252492692D9F164436c31315e911d17F",
+  "MarkExchangeRouter": "0xbBf75DDf6194212811Db06c031b1ea77E53cF0C9",
   "MockERC721": "0xf53c2D9311117892BfF503635d1AE47d9eF8862A",
 };
 let exchangeRouter;
@@ -23,7 +23,7 @@ const INVERSE_BASIS_POINT = 10000;
 const price: BigNumber = eth('0.0000001');
 const feeRate = 300;
 const wethAddress = "0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9";
-let tokenId = 6;
+let tokenId = 8;
 
 // npx hardhat run --network sepolia scripts/test_sepolia.ts
 async function main() {
