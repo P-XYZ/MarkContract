@@ -7,6 +7,7 @@ import "../interfaces/IMarkExchange.sol";
 
 error OrderCancelledOrFilled();
 error NotOrderTrader();
+error BundleExecutionFailed()
 
 contract MarkExchangeInput is IMarkExchange, InputExchange {
     
@@ -41,7 +42,7 @@ contract MarkExchangeInput is IMarkExchange, InputExchange {
      * @dev Bulk settle sell buy orders:
      * @param settlements buy/sell matches
      */
-    function bulksettleExchangeInputs(Settlement[] calldata settlements)
+    function bulkSettleExchangeInputs(Settlement[] calldata settlements)
         external
         payable
         exchangeOpen
@@ -52,6 +53,26 @@ contract MarkExchangeInput is IMarkExchange, InputExchange {
         for (uint256 i=0; i < settlementLength; ++i) {
             bytes memory data = abi.encodeWithSelector(this._settleExchangeInputs.selector, settlements[i].sell, settlements[i].buy);
             (bool success,) = address(this).delegatecall(data);
+        }
+        _returnDust();
+    }
+
+    /**
+     * @dev Bundle settle sell buy orders:
+     * @param settlements buy/sell matches
+     */
+    function bundleSettleExchangeInputs(Settlement[] calldata settlements)
+        external
+        payable
+        exchangeOpen
+        accrueETHDust
+    {
+        uint256 settlementLength = settlements.length;
+
+        for (uint256 i=0; i < settlementLength; ++i) {
+            bytes memory data = abi.encodeWithSelector(this._settleExchangeInputs.selector, settlements[i].sell, settlements[i].buy);
+            (bool success,) = address(this).delegatecall(data);
+            if (!success) revert BundleExecutionFailed()
         }
         _returnDust();
     }

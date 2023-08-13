@@ -36,13 +36,13 @@ contract InputSettlement is Ownable, MarkExchangeEvents {
     
     // constants
     // etherium WETH
-    // address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;  // TODO: to change this address
+    address private constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;  // TODO: to change this address
     // Mock token address
-    // address public constant WETH = 0xD5ac451B0c50B9476107823Af206eD814a2e2580;  // TODO: to change this address
+    // address private constant WETH = 0xD5ac451B0c50B9476107823Af206eD814a2e2580;  // TODO: to change this address
     // sepolia WETH
     // address private constant WETH = 0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9;  // TODO: to change this address
     // mumbai WETH
-    address private constant WETH = 0xA6FA4fB5f76172d178d61B04b0ecd319C5d1C0aa;  // TODO: to change this address
+    // address private constant WETH = 0xA6FA4fB5f76172d178d61B04b0ecd319C5d1C0aa;  // TODO: to change this address
 
     uint256 private constant INVERSE_BASIS_POINT = 10_000;
 
@@ -173,7 +173,8 @@ contract InputSettlement is Ownable, MarkExchangeEvents {
             /* Transfer funds in WETH. */
             IERC20(WETH).safeTransferFrom(from, to, amount);
         } else {
-            revert InvalidPaymentToken();
+            result = IERC20(paymentToken).safeTransferFrom(from, to, amount);
+            if (!result) revert InvalidPaymentToken();
         }
     }
 
