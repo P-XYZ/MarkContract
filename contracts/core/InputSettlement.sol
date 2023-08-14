@@ -35,7 +35,7 @@ contract InputSettlement is Ownable, MarkExchangeEvents {
     using SafeERC20 for IERC20;
     
     // constants
-    // etherium WETH
+    // ethereum WETH
     address private constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;  // TODO: to change this address
     // Mock token address
     // address private constant WETH = 0xD5ac451B0c50B9476107823Af206eD814a2e2580;  // TODO: to change this address
@@ -169,12 +169,9 @@ contract InputSettlement is Ownable, MarkExchangeEvents {
             _addressNotZero(to);
             (bool success,) = payable(to).call{value: amount}("");
             if(!success) revert ETHTransferFailed();
-        } else if (paymentToken == WETH) {
-            /* Transfer funds in WETH. */
-            IERC20(WETH).safeTransferFrom(from, to, amount);
         } else {
-            result = IERC20(paymentToken).safeTransferFrom(from, to, amount);
-            if (!result) revert InvalidPaymentToken();
+            /* Transfer funds in ERC20. */
+            IERC20(WETH).safeTransferFrom(from, to, amount);
         }
     }
 

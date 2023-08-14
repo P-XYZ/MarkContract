@@ -7,7 +7,6 @@ import "../interfaces/IMarkExchange.sol";
 
 error OrderCancelledOrFilled();
 error NotOrderTrader();
-error BundleExecutionFailed()
 
 contract MarkExchangeInput is IMarkExchange, InputExchange {
     
@@ -70,9 +69,7 @@ contract MarkExchangeInput is IMarkExchange, InputExchange {
         uint256 settlementLength = settlements.length;
 
         for (uint256 i=0; i < settlementLength; ++i) {
-            bytes memory data = abi.encodeWithSelector(this._settleExchangeInputs.selector, settlements[i].sell, settlements[i].buy);
-            (bool success,) = address(this).delegatecall(data);
-            if (!success) revert BundleExecutionFailed()
+            _settleExchangeInputs(settlements[i].sell, settlements[i].buy);
         }
         _returnDust();
     }
@@ -136,7 +133,6 @@ contract MarkExchangeInput is IMarkExchange, InputExchange {
      */
     function cancelExchangeOrder(Order calldata order) public {
         /* Assert sender is authorized to cancel order. */
-        // require(msg.sender == order.trader, "MarkExchange: only trader can cancel");
         if(msg.sender != order.trader) revert NotOrderTrader();
 
         bytes32 hash = _hashOrder(order, nonces[order.trader]);
