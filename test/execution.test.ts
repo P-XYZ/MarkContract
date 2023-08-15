@@ -1,4 +1,5 @@
 import { expect } from 'chai';
+import { simpleDeploy } from '@makerdao/hardhat-utils';
 import { Wallet, Contract, BigNumber } from 'ethers';
 
 import type { CheckBalances, GenerateOrder } from './exchange';
@@ -20,6 +21,7 @@ export function runExecuteTests(setupTest: any) {
     let thirdParty: Wallet;
 
     let weth: Contract;
+    let USDT: Contract;
 
     let matchCriterias: Record<string, Contract>;
 
@@ -69,6 +71,7 @@ export function runExecuteTests(setupTest: any) {
         checkBalances,
         generateOrder,
       } = await setupTest());
+      USDT = (await simpleDeploy('MockERC20', [])) as any;
     });
 
     beforeEach(async () => {
@@ -248,17 +251,23 @@ export function runExecuteTests(setupTest: any) {
       ).to.be.reverted;
     });
 
-    it('should revert with ERC20 not WETH', async () => {
-      sell.parameters.paymentToken = mockERC721.address;
-      buy.parameters.paymentToken = mockERC721.address;
+    it('should work with ERC20', async () => {
+      const amount = sell.parameters.price.mul(2);
+      expect(await USDT.balanceOf(alice.address)).to.be.equal(0);
+      expect(await USDT.balanceOf(bob.address)).to.be.equal(0);
+      await USDT.mint(bob.address, amount);
+      await USDT.connect(bob).approve(exchange.address, amount);
+      expect(await USDT.balanceOf(alice.address)).to.be.equal(0);
+      expect(await USDT.balanceOf(bob.address)).to.be.equal(amount);
+      sell.parameters.paymentToken = USDT.address;
+      buy.parameters.paymentToken = USDT.address;
       sellInput = await sell.pack();
       buyInput = await buy.packNoSigs();
       // console.log(`sellInput: ${JSON.stringify(sellInput, null, 2)}`);
       // console.log(`buyInput: ${JSON.stringify(buyInput, null, 2)}`);
-
-      await expect(
-        exchange.connect(bob).settleExchangeInputs(sellInput, buyInput),
-      ).to.be.revertedWithCustomError(exchange, `InvalidPaymentToken`);
+      await exchange.connect(bob).settleExchangeInputs(sellInput, buyInput);
+      expect(await USDT.balanceOf(alice.address)).to.be.gt(0);
+      expect(await USDT.balanceOf(bob.address)).to.be.lt(amount);
     });
 
     it('should revert if user revokes approval from Exchange', async () => {
@@ -562,7 +571,7 @@ export function runExecuteTests(setupTest: any) {
       );
     });
 
-    it('bulksettleExchangeInputs should work', async () => {
+    it('bulkSettleExchangeInputs should work', async () => {
       sell.parameters.paymentToken = ZERO_ADDRESS;
       buy.parameters.paymentToken = ZERO_ADDRESS;
       sellInput = await sell.pack();
@@ -578,7 +587,7 @@ export function runExecuteTests(setupTest: any) {
       const buyInput2 = await buy2.pack();
 
       const tx = await waitForTx(
-        exchange.connect(bob).bulksettleExchangeInputs(
+        exchange.connect(bob).bulkSettleExchangeInputs(
           [
             [
               sellInput,
@@ -602,6 +611,155 @@ export function runExecuteTests(setupTest: any) {
         feeRecipientBalance.add(fee.mul(2)).add(fee.mul(2)),
         feeRecipientBalanceWeth,
       );
+    });
+
+    it('bulkSettleExchangeInputs should partially work', async () => {
+      sell.parameters.paymentToken = ZERO_ADDRESS;
+      buy.parameters.paymentToken = ZERO_ADDRESS;
+      sellInput = await sell.pack();
+      buyInput = await buy.packNoSigs();
+
+      const firstTokenId = tokenId;
+      tokenId += 1;
+      await mockERC721.mint(alice.address, tokenId);
+      expect(await mockERC721.ownerOf(firstTokenId)).to.be.equal(alice.address);
+      expect(await mockERC721.ownerOf(tokenId)).to.be.equal(alice.address);
+      const sell2 = generateOrder(alice, { side: Side.Sell, tokenId });
+      const buy2 = generateOrder(bob, { side: Side.Buy, tokenId });
+      sell2.parameters.paymentToken = ZERO_ADDRESS;
+      buy2.parameters.paymentToken = ZERO_ADDRESS;
+      const sellInput2 = await sell2.pack();
+      const buyInput2 = await buy2.pack();
+      const invalidSell2 = generateOrder(bob, { side: Side.Sell, tokenId });
+      const invalidSellInput2 = await invalidSell2.pack();
+
+      // one of the settlement is not valid, it should work
+      const firstTx = await waitForTx(
+        exchange.connect(bob).bulkSettleExchangeInputs(
+          [
+            [
+              sellInput,
+              buyInput
+            ],
+            [
+              invalidSellInput2,
+              buyInput2
+            ]
+          ],
+          { value: price.add(fee).mul(2) }
+        ),
+      );
+      const firstTxGasFee = firstTx.gasUsed.mul(firstTx.effectiveGasPrice);
+      expect(await mockERC721.ownerOf(firstTokenId)).to.be.equal(bob.address);
+      expect(await mockERC721.ownerOf(tokenId)).to.be.equal(alice.address);
+      const tx = await waitForTx(
+        exchange.connect(bob).bulkSettleExchangeInputs(
+          [
+            [
+              sellInput,
+              buyInput
+            ],
+            [
+              sellInput2,
+              buyInput2
+            ]
+          ],
+          { value: price.add(fee).mul(2) }),
+      );
+      const gasFee = tx.gasUsed.mul(tx.effectiveGasPrice);
+      expect(await mockERC721.ownerOf(firstTokenId)).to.be.equal(bob.address);
+      expect(await mockERC721.ownerOf(tokenId)).to.be.equal(bob.address);
+      await checkBalances(
+        aliceBalance.add(priceMinusFee.mul(2)),
+        aliceBalanceWeth,
+        bobBalance.sub(price.mul(2)).sub(gasFee).sub(firstTxGasFee).sub(fee.mul(2)),
+        bobBalanceWeth,
+        feeRecipientBalance.add(fee.mul(2)).add(fee.mul(2)),
+        feeRecipientBalanceWeth,
+      );
+    });
+
+    it('bundleSettleExchangeInputs should work', async () => {
+      sell.parameters.paymentToken = ZERO_ADDRESS;
+      buy.parameters.paymentToken = ZERO_ADDRESS;
+      sellInput = await sell.pack();
+      buyInput = await buy.packNoSigs();
+
+      const firstTokenId = tokenId;
+      tokenId += 1;
+      await mockERC721.mint(alice.address, tokenId);
+      expect(await mockERC721.ownerOf(firstTokenId)).to.be.equal(alice.address);
+      expect(await mockERC721.ownerOf(tokenId)).to.be.equal(alice.address);
+      const sell2 = generateOrder(alice, { side: Side.Sell, tokenId });
+      const buy2 = generateOrder(bob, { side: Side.Buy, tokenId });
+      sell2.parameters.paymentToken = ZERO_ADDRESS;
+      buy2.parameters.paymentToken = ZERO_ADDRESS;
+      const sellInput2 = await sell2.pack();
+      const buyInput2 = await buy2.pack();
+
+      const tx = await waitForTx(
+        exchange.connect(bob).bundleSettleExchangeInputs(
+          [
+            [
+              sellInput,
+              buyInput
+            ],
+            [
+              sellInput2,
+              buyInput2
+            ]
+          ],
+          { value: price.add(fee).mul(2) }),
+      );
+      const gasFee = tx.gasUsed.mul(tx.effectiveGasPrice);
+      expect(await mockERC721.ownerOf(firstTokenId)).to.be.equal(bob.address);
+      expect(await mockERC721.ownerOf(tokenId)).to.be.equal(bob.address);
+      await checkBalances(
+        aliceBalance.add(priceMinusFee.mul(2)),
+        aliceBalanceWeth,
+        bobBalance.sub(price.mul(2)).sub(gasFee).sub(fee.mul(2)),
+        bobBalanceWeth,
+        feeRecipientBalance.add(fee.mul(2)).add(fee.mul(2)),
+        feeRecipientBalanceWeth,
+      );
+    });
+
+    it('bundleSettleExchangeInputs should NOT partially work', async () => {
+      sell.parameters.paymentToken = ZERO_ADDRESS;
+      buy.parameters.paymentToken = ZERO_ADDRESS;
+      sellInput = await sell.pack();
+      buyInput = await buy.packNoSigs();
+
+      const firstTokenId = tokenId;
+      tokenId += 1;
+      await mockERC721.mint(alice.address, tokenId);
+      expect(await mockERC721.ownerOf(firstTokenId)).to.be.equal(alice.address);
+      expect(await mockERC721.ownerOf(tokenId)).to.be.equal(alice.address);
+      const sell2 = generateOrder(alice, { side: Side.Sell, tokenId });
+      const buy2 = generateOrder(bob, { side: Side.Buy, tokenId });
+      sell2.parameters.paymentToken = ZERO_ADDRESS;
+      buy2.parameters.paymentToken = ZERO_ADDRESS;
+      const sellInput2 = await sell2.pack();
+      const buyInput2 = await buy2.pack();
+      const invalidSell2 = generateOrder(bob, { side: Side.Sell, tokenId });
+      const invalidSellInput2 = await invalidSell2.pack();
+
+      // one of the settlement is not valid, it should NOT work
+      await expect(
+        exchange.connect(bob).bundleSettleExchangeInputs(
+          [
+            [
+              sellInput,
+              buyInput
+            ],
+            [
+              invalidSellInput2,
+              buyInput2
+            ]
+          ],
+          { value: price.add(fee).mul(2) }
+        )
+      ).to.be.reverted;
     });
   };
 }

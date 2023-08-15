@@ -33,17 +33,6 @@ error ETHTransferFailed();
 
 contract InputSettlement is Ownable, MarkExchangeEvents {
     using SafeERC20 for IERC20;
-    
-    // constants
-    // ethereum WETH
-    address private constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;  // TODO: to change this address
-    // Mock token address
-    // address private constant WETH = 0xD5ac451B0c50B9476107823Af206eD814a2e2580;  // TODO: to change this address
-    // sepolia WETH
-    // address private constant WETH = 0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9;  // TODO: to change this address
-    // mumbai WETH
-    // address private constant WETH = 0xA6FA4fB5f76172d178d61B04b0ecd319C5d1C0aa;  // TODO: to change this address
-
     uint256 private constant INVERSE_BASIS_POINT = 10_000;
 
     // variables
@@ -150,7 +139,7 @@ contract InputSettlement is Ownable, MarkExchangeEvents {
     }
 
     /**
-     * @dev Transfer amount in ETH or WETH
+     * @dev Transfer amount in ETH or ERC20
      * @param paymentToken address of token to pay in
      * @param from token sender
      * @param to token recipient
@@ -171,7 +160,7 @@ contract InputSettlement is Ownable, MarkExchangeEvents {
             if(!success) revert ETHTransferFailed();
         } else {
             /* Transfer funds in ERC20. */
-            IERC20(WETH).safeTransferFrom(from, to, amount);
+            IERC20(paymentToken).safeTransferFrom(from, to, amount);
         }
     }
 
